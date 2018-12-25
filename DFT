@@ -1,0 +1,38 @@
+// 离散傅里叶变换 
+template<class T> 
+// N 点DFT，输入 实部 pxRe，虚部 pxIm,变换后 实部 pyRe 虚部 pyIm
+// bTrans = true DFT 正变换 ，bTrans = false DFT 逆变换
+void DFT(int N,T* pxRe,T* pxIm,T* pyRe,T*Im,bool bTrans=ture)
+{
+  // tPI = pi ,tmp=(NULL==pxIm[j])?0:pxIm[j] 输入的虚部 te控制DFT正、逆变换,默认做正变换
+  T tPI=4*atan(1),tRe,tIm,tmp,te=1;
+  // tw 为 theta ，tPhase=2pi/N，tcos=cos theta,tsin=-sin theta
+  T tw,tPhase=2*tPI/N,tcos,tsin;
+  int i,j; // te=1 i为k,j为n te=-1 i为n，j为k
+  if(false==bTrans) te=-1;// 逆变换 te=-1
+  for(i=0;i<N;i++)
+  {
+    tRe=tIm=0;//初始化 待求X[k] 的 实部 虚部 均为0
+    for(j=0;j<N;j++)
+    {
+      tw = tPhase*i*j;
+      tcos = cos(tw);
+      tsin = -sin(tw);
+      tmp = (NULL==pxIm[j])?0:pxIm[j];
+      // sum Re = sum { Re[x(n)]*cos theta + Im[x(n)]*sin theta }
+      tRe += pxRe[j]*tcos - tmp*te*tsin;
+      // sum Im = sum { Im[x(n)]*cos theta - Re[x(n)]*sin theta }
+      tIm += pxIm[j]*te*tcos + pxRe[j]*tsin;
+    }
+    // 求和完毕 赋值记录
+    pyRe[i] = tRe;
+    pyIm[i] =tIm;
+    // DFT逆变换 系数问题 需要除以N
+    if(false==bTrans)
+    {
+      pyRe[i] /= N;
+      pyIm[i] /= -N;
+    }
+  }
+  
+}
