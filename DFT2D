@@ -1,0 +1,75 @@
+// 利用 一维DFT 创建 二维DFT
+
+// 一维 X[l] = /int_{n=0}^{N-1} x(n) * exp^{-j 2pi nl/N}
+// 二维 X[k,l] = /int_{m=0}^{M-1} \int_{n=0}{N-1} x(m,n) * exp^{-j 2pi * (mk/M + nl/N)}
+//            = /int_{m=0}^{M-1} ( \int_{n=0}{N-1} x(m,n) * exp^{-j 2pi* nl/N} ) * exp^{-j 2pi * mk/M}
+//                                第m组 含N个进行DFT后取出 第l个
+//            = /int_{m=0}^{M-1}         DFT_{m}（l)             * exp^{-j 2pi * mk/M}
+//                                将每组的 第l个 拼成 一组，含M个，DFT后 取出 第k个
+//            = DFT_{DFT_{0}(l),DFT_{1}(l),...,DFT_{M-1}(l)} (k)
+//                	        即为  X[k,l]
+
+template<classe T>
+// 输入二维离散序列 x(m,n) 按行排列 成一维数组 pxRe+j*pxIm, Re[x(m,n)]=pxRe(m*nX+n) Im[x(m,n)]=pxIm(m*nX+n)
+// 原始 x(m,n)                                      DFT后 X[k,l]
+// m            n                         k                 l
+// 0      0 1 2 3 ...nX-1                 0         0 1 2 3 ...nX-1
+// 1      0 1 2 3 ...nX-1                 1         0 1 2 3 ...nX-1
+// .      ...............                 .         ...............
+// nY-1   0 1 2 3...nX-1                  nY-1      0 1 2 3 ...nX-1
+
+//                    nX
+//         -----------------------> nx
+//         |
+//         |
+//  nY     |
+//         |
+//         |
+//         V
+//         ny
+
+void DFT2D(int nX ,int nY,T* pxRe, T* pxIm ,T* pyRe, T* pyIm ,bool bTrans=true)
+{
+  //建立 坐标索引
+  int nx,ny;
+  // 源地址 、目的地址 初始地址 复制
+  T*  pxre=pxRe , *pxim=pxIm , *pyre=pyRe , *pyim=pyIm;
+  // 每一行 进行 DFT 结果存放在 以pyRe、pyIm为首地址的 一维nY*nX数组中
+  for(ny=0,ny<nY,ny++)
+  {
+    DFT(nX,pxre,pxim,pyre,pyrm,bTrans);
+    // 下一组的 源地址 起始地址
+    pxre += nX;
+    if(NULL!= pxIm) pxim += nX;
+    // 下一组的 目的地址 起始地址
+    pyre += nX;
+    pyim += nX;
+  }
+  // 容器 存放 每组的 第l个，共 nY 个
+  pxre = new T[nY];
+  pxim = new T[nY];
+  pyre = new T[nY];
+  pyim = new T[nY];
+  // 每一列l
+  for(nx=0,nx<nX,nx++)
+  {
+    // 由 每一行 第l列 组成
+    for(ny=0,ny<nY,ny++)
+    {
+      pxre[ny] = pyRe[ny*nX + nx];
+      pxim[ny] = pyIm[ny*nX + nx];
+    }
+    // 对 每一列 DFT
+    DFT(nY,pxre,pxim,pyre,pyrm,bTrans);
+    // 取出 第k行,得到X[k,l]
+    for(ny=0,ny<nY,ny++)
+    {
+      pyRe[ny*nX + nx] = pyre[ny];
+      pyIm[ny*nX + nx] = pyim[ny];
+    }
+  }
+  delete[] pxre;
+  delete[] pxim;
+  delete[] pyre;
+  delete[] pyim;
+}
